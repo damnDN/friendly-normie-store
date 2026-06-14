@@ -1,19 +1,19 @@
 import Home from "./Home";
-import About from "./About";
+import Signup from "./Signup";
 import Products from "./Products";
 import ProductDetail from "./ProductDetail";
 import Analytics from "./Analytics";
 import Cart from "./Cart";
-import Dashboard from "./Dashboard";
+import Login from "./Login";
 import Settings from "./Settings";
 
 export {
   Home,
-  About,
+  Signup,
   Products,
   ProductDetail,
   Cart,
-  Dashboard,
+  Login,
   Settings,
   Analytics,
 };

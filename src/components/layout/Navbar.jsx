@@ -2,7 +2,7 @@ import { Link, NavLink } from "react-router-dom";
 
 export default function Navbar() {
   return (
-    <nav className="flex items-center bg-black text-amber-50 h-16 w-[100vh]">
+    <nav className="flex items-center bg-black text-amber-50 h-16 w-full">
       <div>
         <span className="pl-20 pr-72">* LOGO</span>
       </div>
@@ -27,15 +27,15 @@ export default function Navbar() {
         </Link>
         <Link
           className="mr-10 bg-linear-to-r from-white to-white bg-size-[0%_2px] bg-bottom-left bg-no-repeat transition-[background-size] duration-300 hover:bg-size-[100%_2px]"
-          to="/about"
+          to="/signup"
         >
-          About
+          Sign up
         </Link>
         <Link
           className="bg-linear-to-r from-white to-white bg-size-[0%_2px] bg-bottom-left bg-no-repeat transition-[background-size] duration-300 hover:bg-size-[100%_2px]"
-          to="/dashboard"
+          to="/login"
         >
-          Dashboard
+          Log in
         </Link>
       </div>
     </nav>
