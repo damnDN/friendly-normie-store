@@ -23,7 +23,7 @@ export default function AppRoutes() {
 
           <Route path="/cart" element={<Cart />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard" element={<Login />}>
+          <Route path="/login" element={<Login />}>
             {/*A dashboard page should also work like SPA(no new routes, everything loads in same path(ie localhost:/dashboard) but for the sake of demonstration of nested routes(need outlets ofc) here we are*/}
             <Route path="analytics" element={<Analytics />} />
             <Route path="settings" element={<Settings />} />
