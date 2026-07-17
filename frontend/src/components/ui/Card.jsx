@@ -10,10 +10,10 @@ const Card = (props) => {
           src={props.url}
         />
       </div>
-      <div class="flex flex-col justify-center">
-        <span class="text-[23px] font-medium">{props.title}</span>
-        <span class="font-semibold text-[#0ba8e6]">{props.desc}</span>
-        <span class="flex gap-2 font-medium text-gray-600 dark:text-gray-400">
+      <div className="flex flex-col justify-center">
+        <span className="text-[23px] font-medium">{props.title}</span>
+        <span className="font-semibold text-[#0ba8e6]">{props.desc}</span>
+        <span className="flex gap-2 font-medium text-gray-600 dark:text-gray-400">
           {/* process tags */}Tags
         </span>
       </div>
