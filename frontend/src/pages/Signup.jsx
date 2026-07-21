@@ -1,152 +1,211 @@
-import { useState } from "react";
-import React from "react";
+//No Zod needed
+import React, { useState } from "react";
+import api from "../api/axios";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // Added useNavigate
+import { useDispatch } from "react-redux";
+import { setCredentials } from "../redux/features/auth/authSlice";
 
 const Signup = () => {
-  const [form, setForm] = useState({
-    name: "",
+  const dispatch = useDispatch();
+  const location = useLocation();
+  const navigate = useNavigate(); // Hook instantiation
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    username: "",
     email: "",
     password: "",
-    confirm: "",
-    eighteen: false,
   });
-  const [error, setError] = useState({});
-  const handleSubmit = (e) => {
+
+  const handleChange = (event) => {
+    let { name, value } = event.target;
+
+    if (name === "username") {
+      value = value.toLowerCase().replace(/\s/g, "");
+    }
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const isValid = validate(form);
-    if (!isValid) return;
-    console.log(form); //data processing
+    setErrors({});
+    setLoading(true);
+    try {
+      // inside your try block in Signup.jsx
+      const response = await api.post("/api/v1/users", formData);
+      const data = response.data;
+
+      // Dispatch data right into Redux state memory
+      dispatch(
+        setCredentials({
+          user: {
+            _id: data._id,
+            username: data.username,
+            email: data.email,
+            isAdmin: data.isAdmin,
+          },
+          accessToken: data.accessToken,
+        }),
+      );
+
+      console.log("Submitted successfully:", data);
+
+      // Saving initial short-lived Access Token returned from registration endpoint is not needed with Redux applied.
+      // localStorage.setItem("accessToken", data.accessToken);
+
+      // Clear the form fields cleanly
+      setFormData({ username: "", email: "", password: "" });
+
+      // 🧭 DYNAMIC REDIRECT: Look for a saved location path, or fall back to /profile
+      const destination = location.state?.from?.pathname || "/profile";
+      navigate(destination, { replace: true });
+    } catch (error) {
+      console.log(error);
+      // Fallback check in case backend error structure varies
+      const backendErrors = error.response?.data?.errorMessages || {
+        general: error.response?.data?.message || "An error occurred",
+      };
+      setErrors(backendErrors);
+    } finally {
+      setLoading(false);
+    }
   };
-  const required = (e, type) => {
-    e.target.value.length == 0
-      ? setError((prev) => ({ ...prev, [type]: `${type} is required` }))
-      : setError((prev) => ({ ...prev, [type]: undefined }));
-  };
-  const validate = (form) => {
-    const newErrors = {};
 
-    //  1. email
-    const emailRegex = /\S+@\S+\.\S+/;
-
-    if (!emailRegex.test(form.email)) {
-      newErrors.email = "Invalid email";
-    }
-
-    // 2. password length
-    if (form.password.length < 8) {
-      newErrors.password = "Password must have at least 8 characters";
-    }
-
-    //3. password strength: to be done
-    //4. confirm password
-    if (form.password !== form.confirm) {
-      newErrors.confirm = "Passwords do not match";
-    }
-    //5. confirm age
-    if (!form.eighteen) {
-      newErrors.eighteen = "Must be above 18 years";
-    }
-
-    setError(newErrors);
-
-    return Object.keys(newErrors).length === 0; //used in handleSubmit to prevent submission if validation fails
-  };
   return (
-    <>
-      <form
-        onSubmit={handleSubmit}
-        className="inline-flex flex-col bg-green-400 w-[20%] p-2 mx-auto rounded-2xl border border-green-500"
-      >
-        {/* NAME */}
-        <label htmlFor="name">Your name</label>
-        <input
-          name="name"
-          value={form.name}
-          onBlur={(e) => {
-            required(e, "name");
-          }}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          className="outline-none border border-white"
-        />
-        {error.name && <div>{error.name}</div>}
+    <main className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+      <section className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold text-white">Create Account</h1>
 
-        {/* EMAIL */}
-        <label htmlFor="email">Your email</label>
-        <input
-          type="email"
-          name="email"
-          value={form.email}
-          onBlur={(e) => {
-            required(e, "email");
-          }}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className="outline-none border border-white"
-        />
-        {error.email && <div>{error.email}</div>}
-
-        {/* PASSWORD */}
-        <label htmlFor="email">Your password</label>
-        <input
-          type="password"
-          name="password"
-          value={form.password}
-          onBlur={(e) => {
-            required(e, "password");
-          }}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          className="outline-none border border-white"
-        />
-        {error.password && <div>{error.password}</div>}
-
-        {/* CONFIRM PASSWORD     */}
-        <label htmlFor="confirm">Confirm password</label>
-        <input
-          type="password"
-          name="confirm"
-          value={form.confirm}
-          onBlur={(e) => {
-            required(e, "confirm");
-          }}
-          onChange={(e) => setForm({ ...form, confirm: e.target.value })}
-          className="outline-none border border-white"
-        />
-        {error.confirm && <div>{error.confirm}</div>}
-
-        <div>
-          <input
-            name="age"
-            checked={form.eighteen}
-            type="checkbox"
-            onChange={(e) => setForm({ ...form, eighteen: e.target.checked })}
-            className="outline-none border border-white"
-          />
-          <label htmlFor="age">I am above 18</label>
-          {error.eighteen && <div>{error.eighteen}</div>}{" "}
+          <p className="mt-1 text-sm text-zinc-400">Sign up to get started.</p>
         </div>
-        <input
-          type="submit"
-          className="px-4 bg-green-300 w-[30%] rounded-xl py-1 cursor-pointer"
-        />
-        <div></div>
-      </form>
 
-      <div>name: {form.name}</div>
-      <div>email: {form.email}</div>
-      <div>password: {form.password}</div>
-      <div>checked: {String(form.eighteen)}</div>
-    </>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label
+              htmlFor="username"
+              className="mb-2 block text-sm font-medium text-zinc-200"
+            >
+              Username
+            </label>
+
+            <input
+              required
+              title="3 to 15 lowercase letters or numbers only"
+              pattern="[a-z0-9]{3,15}"
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              autoComplete="username"
+              style={{ textTransform: "lowercase" }}
+              placeholder="Choose a username"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-2 text-white placeholder:text-zinc-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+            />
+
+            {errors.username && (
+              <p className="mt-1 text-sm text-red-400">{errors.username}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="email"
+              className="mb-2 block text-sm font-medium text-zinc-200"
+            >
+              Email
+            </label>
+
+            <input
+              required
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              autoComplete="email"
+              placeholder="Enter your email"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-2 text-white placeholder:text-zinc-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+            />
+
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-2 block text-sm font-medium text-zinc-200"
+            >
+              Password
+            </label>
+
+            <input
+              required
+              minLength={8}
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              autoComplete="new-password"
+              placeholder="Create a password"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-white placeholder:text-zinc-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+            />
+
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-4 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "Creating account..." : "Create Account"}
+          </button>
+
+          <div className="my-4 flex items-center">
+            <div className="h-px flex-1 bg-zinc-700" />
+            <span className="px-3 text-sm text-zinc-500">OR</span>
+            <div className="h-px flex-1 bg-zinc-700" />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 py-3 font-medium text-white transition hover:bg-zinc-700"
+            >
+              Continue with Google
+            </button>
+
+            <button
+              type="button"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-800 py-3 font-medium text-white transition hover:bg-zinc-700"
+            >
+              Continue with Discord
+            </button>
+          </div>
+        </form>
+
+        <div className="mt-6 border-t border-zinc-800 pt-4 text-center text-sm text-zinc-400">
+          Already have an account?
+          <Link
+            to="/login"
+            className="font-semibold text-blue-400 hover:text-blue-300"
+          >
+            Sign in
+          </Link>
+        </div>
+      </section>
+    </main>
   );
 };
+
 export default Signup;
-
-/*
-concepts learnt:
-1. react state updates are asynchronous. multiple state updates in a block that depend on the current state can overwrite each other if they all read the same stale snapshot. build the state first then update it. KNEW THIS FROM THE START BUT HERE IT WAS HARD TO SPOT THIS IMPLICITLY.
-2. react doesn't render booleans~ <div>checked: {true}</div> renders "checked" only. 
-3. whenever next state depends on previous state, updater function should be used in setstate function BECAUSE rapid updates can still use stale state.
-*/
-
-/*
-Things I can feel need improvement:
-1. required() currrently duplicates validatoin logic outside validate().
-2. 
-*/

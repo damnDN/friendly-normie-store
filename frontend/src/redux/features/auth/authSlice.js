@@ -1,9 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  userInfo: localStorage.getItem("userinfo")
-    ? JSON.parse(localStorage.getItem("userinfo"))
-    : null,
+  user: null, // Holds {_id, username, email, isAdmin}
+  accessToken: null, // Stored purely in memory for top-tier security
+  isAuthenticated: false,
+  isHydrated: false, // Tracks if we have checked for an existing session yet
 };
 
 const authSlice = createSlice({
@@ -11,18 +12,23 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      state.userInfo = action.payload;
-      localStorage.setItem("userInfo", JSON.stringify(action.payload));
-
-      const expirationTime = new Date().getTime() + 30 * 24 * 60 * 60 * 1000;
-      localStorage.setItem("expiratoinTime", expirationTime);
+      const { user, accessToken } = action.payload;
+      state.user = user;
+      state.accessToken = accessToken;
+      state.isAuthenticated = true;
+      state.isHydrated = true;
     },
-    logout: (state) => {
-      state.userInfo = null;
-      localStorage.clear();
+    logOut: (state) => {
+      state.user = null;
+      state.accessToken = null;
+      state.isAuthenticated = false;
+      state.isHydrated = true;
+    },
+    setHydrated: (state) => {
+      state.isHydrated = true;
     },
   },
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, logOut, setHydrated } = authSlice.actions;
 export default authSlice.reducer;

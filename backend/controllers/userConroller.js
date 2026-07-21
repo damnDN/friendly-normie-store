@@ -1,12 +1,14 @@
 import User from "../models/User.js";
+import RefreshToken from "../models/RefreshToken.js";
 
 import asyncHandler from "../middlewares/asyncHandler.js";
 
 import hash from "../utils/generateHash.js";
-import createToken from "../utils/createToken.js";
+import createJWT from "../utils/createJWT.js";
+import createRefToken from "../utils/createRefreshToken.js";
 import AppError from "../utils/appError.js";
 
-const createUser = asyncHandler(async (req, res) => {
+const createUser = asyncHandler(async (req, res, next) => {
   const { username, email, password } = req.body;
 
   if (!username || !email || !password) {
@@ -19,26 +21,27 @@ const createUser = asyncHandler(async (req, res) => {
     throw new AppError("USER ALREADY EXISTS", 400);
   }
 
-  //Hashing the password handled in model
+  //Hashing the password: handled in model
 
   //Creating a new user
-  const newUser = await new User({ username, email, password });
+  const newUser = new User({ username, email, password });
+  await newUser.save();
+  const accToken = createJWT(newUser._id);
+  const refToken = createRefToken(res);
+  const newRefToken = new RefreshToken({
+    userId: newUser._id,
+    token: refToken,
+    is_Used: false,
+  });
+  await newRefToken.save();
 
-  try {
-    await newUser.save();
-    createToken(res, newUser._id);
-
-    res.status(201).json({
-      _id: newUser._id,
-      username: newUser.username,
-      email: newUser.email,
-      isAdmin: newUser.isAdmin,
-    });
-  } catch (error) {
-    //well, could use the custom error instance here but this also works. REMEMBER.
-    res.status(400);
-    throw new AppError("Invalid user data", 400);
-  }
+  res.status(201).json({
+    _id: newUser._id,
+    username: newUser.username,
+    email: newUser.email,
+    isAdmin: newUser.isAdmin,
+    accessToken: accToken, // Send initial AT to React frontend
+  });
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -54,7 +57,7 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!isPasswordValid) {
     throw new AppError("Invalid Password", 401);
   }
-  createToken(res, userExists._id);
+  createJWT(res, userExists._id);
   res.status(200).json({ message: `Welcome Back owner of email: ${email}` });
 });
 
@@ -96,4 +99,20 @@ const updateUser = asyncHandler(async (req, res) => {
     email: updatedUser.email,
   });
 });
+
 export { createUser, loginUser, logOutUser, getAllUsers, getUser, updateUser };
+
+/**
+* Throwing error in catch literally overrides all the error handling done in asyncHandler().
+* Explanation: With throw AppError in catch block you are manually catching the original
+* error, breaking the promise chain initialized by asyncHandler(). Throwing a new error
+* inside a catch block without returning/re-throwing it correctly causes an unhandled rejection.
+
+* Solution:
+* A) Use next param and instead of throwing Error(....) do next(new Error()) in the catch block,
+* it will keep the asyncHandler's promise chain intact.
+* B) Don't use try-catch(Since asyncHandler's already for catching errors), write a great global level
+*    error middleware. 
+
+* I used B.
+**/

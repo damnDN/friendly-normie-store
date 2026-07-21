@@ -5,21 +5,34 @@ import AppError from "../utils/appError.js";
 
 //Check if the user is authenticated or not
 const authenticate = asyncHandler(async (req, res, next) => {
-  let token;
+  const authHeader = req.headers["authorization"];
 
-  //Read JWT from the 'jwt' cookie
-  token = req.cookies.jwt;
-
-  if (!token) {
-    throw new AppError("Not authenticated: Token was not provided", 401);
+  // 1. Check if header exists and follows the 'Bearer <token>' pattern
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    throw new AppError("Access token missing or invalid format", 401);
   }
+
+  // 2. Safely extract the token string
+  const token = authHeader.split(" ")[1];
+
   try {
+    // 3. Verify the token synchronously with your secret
     const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    // 4. Attach payload to request for the next middleware/routes
     req.user = await User.findById(payload.userId).select("-password");
     next();
   } catch (error) {
-    throw new AppError(error.message, 401);
-    //refresh tokens coming soon
+    // 5. Catch token expiration specifically for your frontend retry loop
+    if (error.name === "TokenExpiredError") {
+      return res.status(403).json({
+        code: "TOKEN_EXPIRED",
+        message: "Access token has expired",
+      });
+    }
+
+    // 6. Forward any other token validation errors to your AppError handler
+    throw new AppError("Invalid or manipulated access token", 401);
   }
 });
 

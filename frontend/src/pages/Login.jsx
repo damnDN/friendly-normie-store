@@ -1,207 +1,152 @@
-import { useState } from "react";
+//No Zod needed
 
-export default function Login() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    jobs: [
-      {
-        company: "",
-        position: "",
-      },
-    ],
+import React, { useState } from "react";
+import api from "../api/axios";
+import { Link } from "react-router-dom";
+
+const Login = () => {
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    field: "",
+    password: "",
   });
 
-  // Handle top-level inputs (name, email)
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
+  const handleChange = (event) => {
+    let { name, value } = event.target;
+
+    setFormData((prevData) => ({
+      ...prevData,
       [name]: value,
     }));
   };
 
-  // Handle nested job inputs using index
-  const handleJobChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedJobs = [...form.jobs];
-    updatedJobs[index][name] = value;
-
-    setForm((prev) => ({
-      ...prev,
-      jobs: updatedJobs,
-    }));
-  };
-
-  // Append a new job object to the list
-  const addJobField = () => {
-    setForm((prev) => ({
-      ...prev,
-      jobs: [...prev.jobs, { company: "", position: "" }],
-    }));
-  };
-
-  // Remove a specific job object by index
-  const removeJobField = (index) => {
-    // Keep at least one job field if required, or allow empty array
-    const updatedJobs = form.jobs.filter((_, i) => i !== index);
-    setForm((prev) => ({
-      ...prev,
-      jobs: updatedJobs,
-    }));
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitted Data:", form);
+    setErrors({});
+    setLoading(true);
+    try {
+      const response = await api.post("/api/v1/users/login", formData);
+      const data = response.data;
+
+      // Only runs for 2xx responses
+      console.log("Submited successfully:", data);
+
+      // Optional: clear the form
+      setFormData({
+        field: "",
+        password: "",
+      });
+    } catch (error) {
+      // Runs for 4xx and 5xx responses
+      console.log(error); // Entire AxiosError
+      console.log(error.response); // HTTP response
+      console.log(error.response.data); // JSON from validator functions
+      setErrors(error.response.data.errorMessages);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      style={{
-        maxWidth: "500px",
-        margin: "20px auto",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <h2>Profile & History Form</h2>
-      <form onSubmit={handleSubmit}>
-        {/* Top-level fields */}
-        <div className="mb-6.25">
-          <label style={{ display: "block", marginBottom: "5px" }}>Name:</label>
-          <input
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleInputChange}
-            required
-            className="border w-full p-2"
-          />
-        </div>
+    <main className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+      <section className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold text-white">Welcome Back</h1>
 
-        <div className="mb-6.25">
-          <label style={{ display: "block", marginBottom: "5px" }}>
-            Email:
-          </label>
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleInputChange}
-            required
-            className="border w-full p-2"
-          />
-        </div>
+          <p className="mt-1 text-sm text-zinc-400">Sign in to continue.</p>
+        </div>{" "}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div>
+            <label
+              htmlFor="field"
+              className="mb-2 block text-sm font-medium text-zinc-200"
+            >
+              Username or Email
+            </label>{" "}
+            <input
+              required
+              type="text"
+              id="field"
+              name="field"
+              value={formData.field}
+              onChange={handleChange}
+              autoComplete="username"
+              style={{ textTransform: "lowercase" }}
+              placeholder="Enter username or email"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-2 text-white placeholder:text-zinc-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+            />
+            {errors.field && (
+              <p className="mt-1 text-sm text-red-400">{errors.field}</p>
+            )}
+          </div>
+          <div>
+            <label
+              htmlFor="password"
+              className="mt-2 block text-sm font-medium text-zinc-200"
+            >
+              Password
+            </label>
+            <input
+              required
+              minLength="8"
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              autoComplete="current-password"
+              placeholder="Enter password"
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-2 text-white placeholder:text-zinc-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+            />
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+            )}
+          </div>
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-4 w-full rounded-lg bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
 
-        {/* Dynamic Jobs Section */}
-        <h3>Job History</h3>
-        {form.jobs.map((job, index) => (
-          <div
-            key={index}
-            className="border border-solid border-[#ccc] p-3.75 mb-3.75 relative"
-          >
-            <div className="flex flex-row justify-between items-center">
-              <h4>Job #{index + 1}</h4>
-              {form.jobs.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeJobField(index)}
-                  className="bg-[#ff4d4d] text-white py-1.25 px-2.5 cursor-pointer border-none "
-                >
-                  Remove
-                </button>
-              )}
+            <div className="my-4 flex items-center">
+              <div className="h-px flex-1 bg-zinc-700" />
+              <span className="px-3 text-sm text-zinc-500">OR</span>
+              <div className="h-px flex-1 bg-zinc-700" />
             </div>
 
-            <div style={{ marginBottom: "10px" }}>
-              <label style={{ display: "block", marginBottom: "5px" }}>
-                Company:
-              </label>
-              <input
-                type="text"
-                name="company"
-                value={job.company}
-                onChange={(e) => handleJobChange(index, e)}
-                className="w-full p-2"
-                required
-              />
-            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 py-3 font-medium text-white transition hover:bg-zinc-700"
+              >
+                Continue with Google
+              </button>
 
-            <div>
-              <label style={{ display: "block", marginBottom: "5px" }}>
-                Position:
-              </label>
-              <input
-                type="text"
-                name="position"
-                value={job.position}
-                onChange={(e) => handleJobChange(index, e)}
-                className="w-full p-2"
-                required
-              />
+              <button
+                type="button"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-800 py-3 font-medium text-white transition hover:bg-zinc-700"
+              >
+                Continue with Discord
+              </button>
             </div>
           </div>
-        ))}
-
-        {/* Action Buttons */}
-        <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-          <button
-            type="button"
-            onClick={addJobField}
-            style={{
-              backgroundColor: "#4CAF50",
-              color: "white",
-              padding: "10px 15px",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              flex: 1,
-            }}
+        </form>
+        <div className="mt-6 border-t border-zinc-800 pt-4 text-center text-sm text-zinc-400">
+          New here?
+          <Link
+            to="/signup"
+            className="font-semibold text-pink-400 hover:text-pink-300"
           >
-            + Add Another Job
-          </button>
-
-          <button
-            type="submit"
-            style={{
-              backgroundColor: "#008CBA",
-              color: "white",
-              padding: "10px 15px",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              flex: 1,
-            }}
-          >
-            Submit Form
-          </button>
+            Create an account
+          </Link>
         </div>
-      </form>
-    </div>
+      </section>
+    </main>
   );
-}
+};
 
-
-//implement useReducer later, use:
-// import React from "react";
-// import { useReducer } from "react";
-
-// const Login = () => {
-//   const initialState = {};
-//   const reducer = (state, action) => {
-//     switch (action.type) {
-//       case "ADD_FIELD":
-//         return {};
-//       case "UPDATE_FIELD":
-//         return {};
-//       case "DELETE_FIELD":
-//         return {};
-//       default:
-//         throw new Error();
-//     }
-//   };
-//   const [state, dispatch] = useReducer(initialState, reducer);
-//   return <></>;
-// };
-
-// export default Login;
+export default Login;

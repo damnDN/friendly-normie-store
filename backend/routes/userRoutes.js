@@ -1,8 +1,8 @@
 import express from "express";
 
 //middlewares
-import { errorHandler } from "../middlewares/errorHandler.js";
 import { authenticate, authorizeAdmin } from "../middlewares/authMiddleware.js";
+import refresh from "../middlewares/refresh.js";
 
 //controllers
 import {
@@ -14,17 +14,26 @@ import {
   updateUser,
 } from "../controllers/userConroller.js";
 
+//validator + schemas
+import validate from "../validation/validator.js";
+import { createUserSchema, loginUserSchema } from "../validation/userSchema.js";
+
 const router = express.Router();
 
 router
   .route("/")
-  .post(createUser, errorHandler)
-  .get(authenticate, authorizeAdmin, getAllUsers, errorHandler);
-router.post("/login", loginUser, errorHandler);
-router.get("/logout", logOutUser, errorHandler); //simulating logging out(a button/link is used irl)
+  .post(validate(createUserSchema), createUser)
+  .get(authenticate, authorizeAdmin, getAllUsers);
+
+router.post("/login", validate(loginUserSchema), loginUser);
+
+router.get("/logout", logOutUser); //simulating logging out(a button/link is used irl)
+
 router
   .route("/profile")
-  .get(authenticate, getUser, errorHandler)
-  .put(authenticate, updateUser, errorHandler);
+  .get(authenticate, getUser)
+  .put(authenticate, validate(createUserSchema), updateUser);
+
+router.post("/refresh", refresh);
 
 export default router;

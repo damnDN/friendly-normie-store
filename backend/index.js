@@ -4,10 +4,12 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
+import helmet from "helmet";
 
 //Files
 import connectDB from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
 
 //configuration?
 dotenv.config();
@@ -16,6 +18,7 @@ connectDB();
 const app = express();
 
 //middlewares
+app.use(helmet());
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -31,5 +34,5 @@ app.get("/api/test", (req, res) => {
   });
 });
 app.use("/api/v1/users", userRoutes);
-
-app.listen(PORT, () => console.log(`Server is running on: ${PORT}`));
+app.use(errorHandler);
+app.listen(PORT, () => console.log(`🍁 Server is running on: ${PORT}`));
