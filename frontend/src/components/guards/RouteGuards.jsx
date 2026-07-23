@@ -25,3 +25,6 @@ export const PublicOnlyRoute = () => {
 
   return !isAuthenticated ? <Outlet /> : <Navigate to={redirectPath} replace />;
 };
+
+//TODO:
+// wwill write it myself later

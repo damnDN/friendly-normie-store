@@ -45,20 +45,35 @@ const createUser = asyncHandler(async (req, res, next) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
+  const { field, password } = req.body;
+  if (!field || !password) {
     throw new AppError("Fill all details", 401);
   }
   const userExists = await User.findOne({ email });
   if (!userExists) {
-    return res.status(200).send("EMAIL DOES NOT EXIST, please SIGN UP");
+    return res.status(200).send("USER DOES NOT EXIST, please SIGN UP");
   }
   const isPasswordValid = await bcrypt.compare(password, userExists.password);
   if (!isPasswordValid) {
     throw new AppError("Invalid Password", 401);
   }
-  createJWT(res, userExists._id);
-  res.status(200).json({ message: `Welcome Back owner of email: ${email}` });
+  const accToken = createJWT(newUser._id);
+  const refToken = createRefToken(res);
+  const newRefToken = new RefreshToken({
+    userId: newUser._id,
+    token: refToken,
+    is_Used: false,
+  });
+  await newRefToken.save();
+
+  res.status(200).json({
+    _id: newUser._id,
+    username: newUser.username,
+    email: newUser.email,
+    isAdmin: newUser.isAdmin,
+    accessToken: accToken,
+    message: `Welcome Back ${field}`,
+  });
 });
 
 const logOutUser = asyncHandler(async (req, res) => {
@@ -78,7 +93,8 @@ const getAllUsers = asyncHandler(async (req, res) => {
 const getUser = asyncHandler(async (req, res) => {
   const { username, email } = req.user;
   res.status(200).json({
-    message: `Welcome ${username}, your email is ${email}`,
+    greet: `Welcome ${username}, your email is ${email}`,
+    other: "To be created later",
   });
 });
 

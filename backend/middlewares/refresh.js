@@ -16,6 +16,7 @@ const refresh = asyncHandler(async (req, res) => {
     .digest("hex");
 
   // Find the token record
+  //EDIT: what about the race condition??
   const savedTokenDocument = await RefreshToken.findOne({
     token: hashedIncomingToken,
   });

@@ -1,10 +1,14 @@
 //No Zod needed
-
 import React, { useState } from "react";
 import api from "../api/axios";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // Added useNavigate
+import { useDispatch } from "react-redux";
+import { setCredentials } from "../redux/features/auth/authSlice";
 
 const Login = () => {
+  const dispatch = useDispatch();
+  const location = useLocation();
+  const navigate = useNavigate(); // Hook instantiation
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
@@ -26,28 +30,40 @@ const Login = () => {
     setErrors({});
     setLoading(true);
     try {
-      const response = await api.post("/api/v1/users/login", formData);
+      const response = await api.post("/api/v1/users", formData);
       const data = response.data;
 
-      // Only runs for 2xx responses
-      console.log("Submited successfully:", data);
+      // Dispatch data right into Redux state memory
+      dispatch(
+        setCredentials({
+          user: {
+            _id: data._id,
+            username: data.username,
+            email: data.email,
+            isAdmin: data.isAdmin,
+          },
+          accessToken: data.accessToken,
+        }),
+      );
 
-      // Optional: clear the form
-      setFormData({
-        field: "",
-        password: "",
-      });
+      console.log("Submitted successfully:", data);
+
+      setFormData({ field: "", password: "" });
+
+      //Dynamic Redirect
+      const destination = location.state?.from?.pathname || "/profile";
+      navigate(destination, { replace: true });
     } catch (error) {
-      // Runs for 4xx and 5xx responses
-      console.log(error); // Entire AxiosError
-      console.log(error.response); // HTTP response
-      console.log(error.response.data); // JSON from validator functions
-      setErrors(error.response.data.errorMessages);
+      console.log(error);
+      // Fallback check in case backend error structure varies
+      const backendErrors = error.response?.data?.errorMessages || {
+        general: error.response?.data?.message || "An error occurred",
+      };
+      setErrors(backendErrors);
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <main className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
       <section className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">

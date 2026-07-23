@@ -3,7 +3,11 @@ import crypto from "crypto";
 
 const tokenSchema = mongoose.Schema(
   {
-    userId: { type: String, required: true },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     token: { type: String, required: true },
     is_Used: { type: Boolean, required: true, default: false },
   },
