@@ -30,7 +30,7 @@ const Login = () => {
     setErrors({});
     setLoading(true);
     try {
-      const response = await api.post("/api/v1/users", formData);
+      const response = await api.post("/api/v1/users/login", formData);
       const data = response.data;
 
       // Dispatch data right into Redux state memory

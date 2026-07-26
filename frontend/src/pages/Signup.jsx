@@ -95,7 +95,7 @@ const Signup = () => {
             <input
               required
               title="3 to 15 lowercase letters or numbers only"
-              pattern="[a-z0-9]{3,15}"
+              pattern="[a-z0-9]{4,15}"
               type="text"
               id="username"
               name="username"

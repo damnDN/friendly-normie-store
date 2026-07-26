@@ -10,7 +10,8 @@ import AppError from "../utils/appError.js";
 
 const refresh = asyncHandler(async (req, res) => {
   const incomingRT = req.cookies.refreshToken;
-  if (!incomingRT) throw new AppError("Refresh token missing", 401);
+  if (!incomingRT)
+    throw new AppError("Refresh token missing", 401, "REFRESH_TOKEN_MISSING");
   //+ redirect user to login OH i could end the function here with .json{message: "Redirect user to login"}
 
   //hash the incoming token to verify with token in db
@@ -35,7 +36,11 @@ const refresh = asyncHandler(async (req, res) => {
       secure: process.env.NODE_ENV !== "development",
       sameSite: "strict",
     });
-    throw new AppError("Compromised session. Please re-authenticate.", 403);
+    throw new AppError(
+      "Compromised session. Please re-authenticate.",
+      403,
+      "TOKEN_REUSE_DETECTED",
+    );
   }
 
   // Mark the current token as used

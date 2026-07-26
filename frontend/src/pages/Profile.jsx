@@ -1,13 +1,11 @@
 import api from "../api/axios.js";
-import React from "react";
-import { useState, useCallback } from "react";
+import { React, useState, useEffect } from "react";
 
 const Profile = () => {
-  const [data, setData] = useState("");
-
-  useCallback(() => {
+  const [data, setData] = useState({ data: "", greet: "" });
+  useEffect(() => {
     const getProfile = async () => {
-      const response = await api.get("/api/users/profile");
+      const response = await api.get("/api/v1/users/profile");
       setData(response.data);
     };
 
@@ -19,7 +17,7 @@ const Profile = () => {
   }, []);
   return (
     <>
-      <section className="flex justify-center items-center">
+      <section className="flex flex-col justify-center items-center">
         <div className="text-2xl italic">testing</div>
 
         <div className="text-2xl italic">{data.greet}</div>

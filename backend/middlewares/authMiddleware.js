@@ -9,7 +9,11 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
   // 1. Check if header exists and follows the 'Bearer <token>' pattern
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    throw new AppError("Access token missing or invalid format", 401);
+    throw new AppError(
+      "Access token missing or invalid format",
+      401,
+      "ACCESS_TOKEN_MISSING",
+    );
   }
 
   // 2. Safely extract the token string
@@ -20,7 +24,13 @@ const authenticate = asyncHandler(async (req, res, next) => {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
 
     // 4. Attach payload to request for the next middleware/routes
-    req.user = await User.findById(payload.userId).select("-password");
+    const user = await User.findById(payload.userId).select("-password");
+
+    if (!user) {
+      throw new AppError("User no longer exists", 401, "USER_NOT_FOUND");
+    }
+
+    req.user = user;
     next();
   } catch (error) {
     // 5. Catch token expiration specifically for your frontend retry loop
@@ -32,7 +42,11 @@ const authenticate = asyncHandler(async (req, res, next) => {
     }
 
     // 6. Forward any other token validation errors to your AppError handler
-    throw new AppError("Invalid or manipulated access token", 401);
+    throw new AppError(
+      "Invalid or manipulated access token",
+      401,
+      "INVALID_ACCESS_TOKEN",
+    );
   }
 });
 
