@@ -1,3 +1,6 @@
+//ONE THING IS BUGGING ME: Completely removed try-catch utilisation because of async wrapper(asyncHandler.js). Is this seriously fine?
+
+import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import RefreshToken from "../models/RefreshToken.js";
 
@@ -31,7 +34,6 @@ const createUser = asyncHandler(async (req, res, next) => {
   const newRefToken = new RefreshToken({
     userId: newUser._id,
     token: refToken,
-    is_Used: false,
   });
   await newRefToken.save();
 
@@ -49,7 +51,11 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!field || !password) {
     throw new AppError("Fill all details", 401);
   }
-  const userExists = await User.findOne({ email });
+
+  //no user can have any non-alphanumeric character in username so following is immaculate
+  const key = field.includes("@") ? "email" : "username";
+
+  const userExists = await User.findOne({ [key]: field });
   if (!userExists) {
     return res.status(200).send("USER DOES NOT EXIST, please SIGN UP");
   }
@@ -57,31 +63,33 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!isPasswordValid) {
     throw new AppError("Invalid Password", 401);
   }
-  const accToken = createJWT(newUser._id);
+  const accToken = createJWT(userExists._id);
   const refToken = createRefToken(res);
   const newRefToken = new RefreshToken({
-    userId: newUser._id,
+    userId: userExists._id,
     token: refToken,
-    is_Used: false,
   });
   await newRefToken.save();
 
   res.status(200).json({
-    _id: newUser._id,
-    username: newUser.username,
-    email: newUser.email,
-    isAdmin: newUser.isAdmin,
+    _id: userExists._id,
+    username: userExists.username,
+    email: userExists.email,
+    isAdmin: userExists.isAdmin,
     accessToken: accToken,
-    message: `Welcome Back ${field}`,
+    message: `Welcome Back ${userExists.username}`,
   });
 });
 
 const logOutUser = asyncHandler(async (req, res) => {
-  res.cookie("jwt", "", {
+  res.clearCookie("refreshToken", {
+    //aow, i sense need of design pattern
     httpOnly: true,
-    expires: new Date(0),
+    secure: process.env.NODE_ENV !== "development",
+    sameSite: "strict",
   });
   //FYI: new Date(0) is c/d epoch date.
+  await User.findOneAndDelete({ email: req.user.email });
   res.status(200).json({ message: "Logged out successfully" });
 });
 
@@ -105,7 +113,7 @@ const updateUser = asyncHandler(async (req, res) => {
   user.email = req.body.email || user.email;
 
   if (req.body.password) {
-    user.password = req.body.pasword;
+    user.password = req.body.password;
   }
 
   const updatedUser = await user.save();

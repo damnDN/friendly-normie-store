@@ -12,11 +12,15 @@ import {
   getAllUsers,
   getUser,
   updateUser,
-} from "../controllers/userConroller.js";
+} from "../controllers/userController.js";
 
 //validator + schemas
 import validate from "../validation/validator.js";
-import { createUserSchema, loginUserSchema } from "../validation/userSchema.js";
+import {
+  createUserSchema,
+  loginUserSchema,
+  updateUserSchema,
+} from "../validation/userSchema.js";
 
 const router = express.Router();
 
@@ -27,12 +31,12 @@ router
 
 router.post("/login", validate(loginUserSchema), loginUser);
 
-router.get("/logout", logOutUser); //simulating logging out(a button/link is used irl)
+router.get("/logout", authenticate, logOutUser); //simulating logging out(a button/link is used irl)
 
 router
   .route("/profile")
   .get(authenticate, getUser)
-  .put(authenticate, validate(createUserSchema), updateUser);
+  .put(authenticate, validate(updateUserSchema), updateUser);
 
 router.post("/refresh", refresh);
 
