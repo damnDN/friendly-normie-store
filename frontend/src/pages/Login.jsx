@@ -56,10 +56,14 @@ const Login = () => {
     } catch (error) {
       console.log(error);
       // Fallback check in case backend error structure varies
-      const backendErrors = error.response?.data?.errorMessages || {
-        general: error.response?.data?.message || "An error occurred",
-      };
-      setErrors(backendErrors);
+      const data = error.response?.data;
+
+      setErrors(
+        data?.errors ?? {
+          general: data?.message ?? "An error occurred",
+        },
+      );
+      console.log(data);
     } finally {
       setLoading(false);
     }
@@ -92,6 +96,7 @@ const Login = () => {
               placeholder="Enter username or email"
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-2 text-white placeholder:text-zinc-500 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
             />
+            {/* Doesn't work */}
             {errors.field && (
               <p className="mt-1 text-sm text-red-400">{errors.field}</p>
             )}
@@ -117,6 +122,9 @@ const Login = () => {
             />
             {errors.password && (
               <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+            )}
+            {errors.general && (
+              <p className="mt-1 text-sm text-red-400">{errors.general}</p>
             )}
           </div>
           <div>

@@ -11,11 +11,18 @@ const validate = (schema) => (req, res, next) => {
       errorMessages[field] = issue.message;
     });
 
-    return res.status(400).json({
-      success: false,
-      message: "Validation failed",
-      errorMessages,
-    });
+    //very very important fix. took me time to get this: till now I had two api contracts(this bypassed that global error handler)
+    return next(
+      new AppError("Validation failed", 400, "VALIDATION_ERROR", errorMessages),
+    );
+
+    //i could do this too?:
+    // throw new AppError(
+    //   "Validation failed",
+    //   400,
+    //   "VALIDATION_ERROR",
+    //   errorMessages,
+    // );
   }
 
   req.body = result.data;

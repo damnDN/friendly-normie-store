@@ -4,6 +4,7 @@ const errorHandler = (error, req, res, next) => {
     message: error.message,
     statusCode: error.statusCode,
     code: error.code,
+    errors: error.errors,
   };
   if ((formattedError.statusCode || 500) >= 500) {
     console.error("🎵 ERROR INTERCEPTED:", error);
@@ -15,18 +16,24 @@ const errorHandler = (error, req, res, next) => {
   if (error.code === 11000) {
     const field = Object.keys(error.keyValue)[0];
 
-    formattedError.message = `${field.toUpperCase()} ALREADY EXISTS`;
+    formattedError.message = "Validation failed";
     formattedError.statusCode = 400;
     formattedError.code = "DUPLICATE_RESOURCE";
+    formattedError.errors = {
+      [field]: `${field} already exists.`,
+    };
   }
 
   // Mongoose validation errors
   if (error.name === "ValidationError") {
-    const messages = Object.values(error.errors).map((err) => err.message);
-
-    formattedError.message = messages.join(", ");
+    formattedError.message = "Validation failed";
     formattedError.statusCode = 400;
     formattedError.code = "VALIDATION_ERROR";
+    formattedError.errors = {};
+
+    for (const [field, err] of Object.entries(error.errors)) {
+      formattedError.errors[field] = err.message;
+    }
   }
 
   // Invalid ObjectId
@@ -38,14 +45,23 @@ const errorHandler = (error, req, res, next) => {
 
   const statusCode = formattedError.statusCode || 500;
 
-  res.status(statusCode).json({
+  const response = {
     success: false,
     code:
       formattedError.code ||
       (statusCode >= 500 ? "INTERNAL_SERVER_ERROR" : undefined),
     message: formattedError.message || "Internal Server Error",
-    stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-  });
+  };
+
+  if (formattedError.errors) {
+    response.errors = formattedError.errors;
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    response.stack = error.stack;
+  }
+
+  res.status(statusCode).json(response);
 };
 
 export { errorHandler };

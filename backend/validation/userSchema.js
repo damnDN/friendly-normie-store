@@ -20,6 +20,16 @@ const emailSchema = z.coerce.string().trim().toLowerCase().email(emailError);
 
 const passwordSchema = z.coerce.string().trim().min(8, passwordError);
 
+const loginFieldSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .refine(
+    (value) =>
+      /^[a-z0-9]+$/.test(value) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+    "Enter a valid username or email",
+  );
+
 const createUserSchema = z.object({
   username: usernameSchema,
   email: emailSchema,
@@ -27,7 +37,7 @@ const createUserSchema = z.object({
 });
 
 const loginUserSchema = z.object({
-  field: z.union([usernameSchema, emailSchema]),
+  field: loginFieldSchema,
   password: passwordSchema,
 });
 
