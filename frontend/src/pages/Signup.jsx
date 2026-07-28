@@ -21,7 +21,10 @@ const Signup = () => {
     let { name, value } = event.target;
 
     if (name === "username") {
-      value = value.toLowerCase().replace(/\s/g, "");
+      value = value.toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+    if (name === "email") {
+      value = value.toLowerCase().replace(/[^a-z0-9@._+=-]/g, "");
     }
     setFormData((prevData) => ({
       ...prevData,
@@ -53,10 +56,10 @@ const Signup = () => {
 
       console.log("Submitted successfully:", data);
 
-      // Saving initial short-lived Access Token returned from registration endpoint is not needed with Redux applied.
+      // Saving initial short-lived Access Token returned from registration endpoint is not needed with Redux applied thus it's just redundant and useless line:
       // localStorage.setItem("accessToken", data.accessToken);
 
-      // Clear the form fields cleanly
+      // Clear the form fields cleanly. It's not needed though, with dynamic redirect.
       setFormData({ username: "", email: "", password: "" });
 
       // 🧭 DYNAMIC REDIRECT: Look for a saved location path, or fall back to /profile
@@ -65,10 +68,14 @@ const Signup = () => {
     } catch (error) {
       console.log(error);
       // Fallback check in case backend error structure varies
-      const backendErrors = error.response?.data?.errorMessages || {
-        general: error.response?.data?.message || "An error occurred",
-      };
-      setErrors(backendErrors);
+      const data = error.response?.data;
+
+      setErrors(
+        data?.errors ?? {
+          general: data?.message ?? "An error occurred",
+        },
+      );
+      console.log(data);
     } finally {
       setLoading(false);
     }
@@ -163,6 +170,9 @@ const Signup = () => {
             )}
           </div>
 
+          {errors.general && (
+            <p className="mt-1 text-sm text-red-400">{errors.general}</p>
+          )}
           <button
             type="submit"
             disabled={loading}

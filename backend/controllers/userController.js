@@ -19,10 +19,35 @@ const createUser = asyncHandler(async (req, res, next) => {
     throw new AppError("Fill all details", 400, "MISSING_REQUIRED_FIELDS");
   }
 
-  const userExists = await User.findOne({ email });
-  if (userExists) {
-    throw new AppError("USER ALREADY EXISTS", 400, "USER_ALREADY_EXISTS");
+  /**
+  * What about:
+  * A taken username
+  * A taken email
+  * Username taken by user 1 and email taken by user 2 ?
+
+  * Solution: Easy, write a good mongoose query and correspoding check blocks BUT THEN BEING TOO SPECIFIC
+    allows database mining aka user enumuration. So the following 3 scenarios:
+  * Case 1: Only the username is found
+  * Case 2: Only the email is found
+  * Case 3: Both fields match database records
+  * reduce to one scenario only:
+  * Only Case: Username or email exists
+  **/
+  const conflictingUsers = await User.find({
+    $or: [{ email: email }, { username: username }],
+  });
+
+  if (conflictingUsers.length > 0) {
+    throw new AppError(
+      "That username or email is already registered.",
+      400,
+      "REGISTRATION_CONFLICT",
+    );
   }
+  /*
+   * "This sacrifices the UX by big amount, some specificity has to be maintained"
+   * NAUR, IT'S PERFECT.
+   */
 
   //Hashing the password: handled in model
 
